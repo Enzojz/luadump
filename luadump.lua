@@ -113,7 +113,7 @@ end
 
 local dumpKey = function(k)
     if (type(k) == "number") then
-        tostring(k):format("[%s]")
+        return tostring(k):format("[%s]")
     elseif string.find(k, "^[_%a][_%w]*$") then
         return k
     else
@@ -128,7 +128,7 @@ local function dump(printFn)
         local callback = {
             number = function() return tostring(node) end,
             boolean = function() return node and "true" or "false" end,
-            string = function() return '"' .. node:format("%q") .. '"' end,
+            string = function() return '"' .. node .. '"' end,
             table = function()
                 local nonSequentialKeys, nonSequentialKeysLength, sequenceLength = getNonSequentialKeys(node)
                 
@@ -261,7 +261,34 @@ local function dump(printFn)
                 end
             end,
             ["function"] = function() return dumpFn(node) end,
-            ["userdata"] = function() return "" end,
+            ["userdata"] = function() 
+                local mt = getmetatable(node)
+                local members = mt.__members
+                local strSeq = ""
+                local t = {}
+                if mt and mt.pairs then
+                    for k,v in pairs(node) do
+                        t[k] = v
+                    end
+                    return printLua(t, indent)
+                elseif mt and members then
+                    local strSeq = ""
+                    for i = 1, #members do
+                        strSeq = string.format("%s%s%s = %s%s",
+                            strSeq,
+                            sindent,
+                            members[i],
+                            printLua(node[members[i]], indent + 1),
+                            i == #members and "" or ",\n"
+                        )
+                    end
+                    return #members > 1
+                        and string.format("{\n%s%s\n}", strSeq, aIndent:rep(indent))
+                        or string.format("{ %s }", strSeq)
+                else
+                    return tostring(node)
+                end
+            end,
             ["thread"] = function() return "" end
         }
         return callback[type(node)](node)
