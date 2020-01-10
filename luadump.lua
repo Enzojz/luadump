@@ -290,8 +290,12 @@ local function dump(printFn)
                 end
             end,
             ["thread"] = function() return "" end
-        }
-        return callback[type(node)](node)
+        }        
+        if callback[type(node)] then
+            return callback[type(node)](node)
+        else
+            return "<unknown type>"
+        end        
     end
     return printLua
 end
