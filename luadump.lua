@@ -283,7 +283,7 @@ local function dump(printFn)
                         )
                     end
                     return #members > 1
-                        and string.format("{\n%s%s\n}", strSeq, aIndent:rep(indent))
+                        and string.format("{\n%s\n%s}", strSeq, aIndent:rep(indent))
                         or string.format("{ %s }", strSeq)
                 else
                     return tostring(node)
