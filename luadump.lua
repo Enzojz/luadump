@@ -263,24 +263,28 @@ local function dump(printFn)
             ["function"] = function() return dumpFn(node) end,
             ["userdata"] = function() 
                 local mt = getmetatable(node)
-                local members = mt.__members
-                local strSeq = ""
+                local pr, v = pcall(function() return mt.pairs end)
+                local pr2, members = pcall(function() return mt.__members end)
                 local t = {}
-                if mt and mt.pairs then
+                if mt and pr and v then 
                     for k,v in pairs(node) do
                         t[k] = v
                     end
                     return printLua(t, indent)
-                elseif mt and members then
+                elseif mt and pr2 and members then
                     local strSeq = ""
                     for i = 1, #members do
-                        strSeq = string.format("%s%s%s = %s%s",
-                            strSeq,
-                            sindent,
-                            members[i],
-                            printLua(node[members[i]], indent + 1),
-                            i == #members and "" or ",\n"
-                        )
+                        local k = members[i]
+                        local l, v = pcall(function() return node[k] end)
+                        if l then
+                            strSeq = string.format("%s%s%s = %s%s",
+                                strSeq,
+                                sindent,
+                                k,
+                                printLua(v, indent + 1),
+                                i == #members and "" or ",\n"
+                            )
+                        end
                     end
                     return #members > 1
                         and string.format("{\n%s\n%s}", strSeq, aIndent:rep(indent))
